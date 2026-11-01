@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.json({ limit: "1mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(__dirname));
 
 app.post("/api/chat", async (req, res) => {
   try {
