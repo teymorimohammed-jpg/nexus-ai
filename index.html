@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080b10"><title>NEXUS AI</title>
+<style>
+:root{color-scheme:dark;--bg:#080b10;--panel:#101720;--line:#283442;--orange:#ff8a35;--muted:#91a0af}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 18%,#18212b 0,#080b10 48%);color:#edf3f8;font:16px system-ui,-apple-system,sans-serif;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line);letter-spacing:.16em}
+.brand{font-weight:800;color:var(--orange)}.status{font-size:11px;color:#8fe0b2;letter-spacing:.1em}
+main{max-width:980px;margin:auto;padding:26px 16px 40px}.hero{text-align:center;padding:12px 0 22px}
+.core{width:174px;height:174px;margin:8px auto 18px;border-radius:50%;position:relative;background:radial-gradient(circle,#fff7e8 0 2%,#ffb66b 4%,#fa7625 13%,#7b351a 28%,#121b27 50%,transparent 69%);box-shadow:0 0 30px #ff8a3566, inset 0 0 26px #ff9a4c55;animation:pulse 3s ease-in-out infinite}
+.core:before,.core:after{content:"";position:absolute;inset:8px;border:1px solid #ff9b50;border-radius:50%;box-shadow:0 0 18px #ff8a35;animation:spin 12s linear infinite}
+.core:after{inset:-8px;border-style:dashed;opacity:.7;animation:spin 20s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{filter:brightness(1.35);transform:scale(1.035)}}
+h1{font-size:clamp(26px,5vw,42px);margin:0;letter-spacing:.12em} .sub{color:var(--muted);font-size:12px;letter-spacing:.18em;margin-top:8px}
+.panel{background:#0d141dcc;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 18px 60px #0006}
+.panelhead{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;color:var(--muted);font-size:12px;letter-spacing:.12em}
+#chat{height:min(42vh,420px);min-height:260px;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:88%;padding:12px 15px;border-radius:14px;line-height:1.5;white-space:pre-wrap}.bot{align-self:flex-start;background:#182431;border:1px solid #2c4052}.user{align-self:flex-end;background:#5b321d;border:1px solid #a85e2b}
+.controls{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line)}textarea{flex:1;resize:vertical;min-height:48px;max-height:130px;background:#080d13;color:white;border:1px solid var(--line);border-radius:12px;padding:13px;font:inherit}
+button{border:1px solid #a85e2b;background:linear-gradient(135deg,#ff9b4a,#d85b20);color:#140d08;border-radius:12px;padding:0 17px;font-weight:750;cursor:pointer}button.secondary{background:#182431;color:#edf3f8;border-color:#34495b}.actions{display:flex;gap:9px;flex-wrap:wrap;padding:0 14px 16px}.hint{color:var(--muted);font-size:12px;padding:0 18px 16px}.error{color:#ffb2a2}
+@media(max-width:560px){.controls{flex-wrap:wrap}.controls textarea{flex-basis:100%}.controls button{min-height:46px;flex:1}.core{width:145px;height:145px}}
+</style></head>
+<body>
+<header><div class="brand">NEXUS <span style="color:#edf3f8">AI</span></div><div class="status">● SYSTEM INTERFACE</div></header>
+<main>
+<section class="hero"><div class="core" aria-label="Animierter KI-Kern"></div><h1>NEXUS AI</h1><div class="sub">PERSONAL INTELLIGENCE SYSTEM</div></section>
+<section class="panel">
+<div class="panelhead"><span>LIVE CONVERSATION</span><span id="state">BEREIT</span></div>
+<div id="chat" aria-live="polite"><div class="msg bot">Guten Tag, Boss. NEXUS ist bereit. Wie kann ich Ihnen helfen?</div></div>
+<div class="controls"><textarea id="input" placeholder="Schreib NEXUS eine Nachricht …" rows="2"></textarea><button id="send">Senden</button><button class="secondary" id="mic" title="Spracheingabe">🎙️</button></div>
+<div class="actions"><button class="secondary" id="voice">🔊 Sprachausgabe: EIN</button><button class="secondary" id="clear">Gespräch leeren</button></div>
+<div class="hint">Mikrofon: Spracheingabe wird vom Browser unterstützt, am zuverlässigsten in Chrome. Die KI benötigt eine konfigurierte Server-Verbindung.</div>
+</section>
+</main>
+<script>
+const chat=document.querySelector("#chat"),input=document.querySelector("#input"),state=document.querySelector("#state");
+let history=[],speak=true;
+function add(text,who){const d=document.createElement("div");d.className="msg "+(who==="user"?"user":"bot");d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+function say(text){if(speak&&"speechSynthesis"in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="de-DE";u.rate=.96;const voices=speechSynthesis.getVoices();u.voice=voices.find(v=>v.lang==="de-DE"&&/male|männ|Markus|Daniel/i.test(v.name))||voices.find(v=>v.lang.startsWith("de"))||null;speechSynthesis.speak(u)}}
+async function send(){const text=input.value.trim();if(!text)return;input.value="";add(text,"user");history.push({role:"user",content:text});state.textContent="DENKT …";document.querySelector("#send").disabled=true;
+try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:history})});const data=await r.json();if(!r.ok)throw new Error(data.error||"Verbindung fehlgeschlagen");const reply=data.reply;history.push({role:"assistant",content:reply});add(reply,"bot");say(reply);state.textContent="ONLINE"}
+catch(e){add("Boss, "+e.message,"bot");state.textContent="VERBINDUNG PRÜFEN"}
+finally{document.querySelector("#send").disabled=false;input.focus()}}
+document.querySelector("#send").onclick=send;input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});
+document.querySelector("#voice").onclick=e=>{speak=!speak;e.currentTarget.textContent="🔊 Sprachausgabe: "+(speak?"EIN":"AUS")};
+document.querySelector("#clear").onclick=()=>{history=[];chat.innerHTML='<div class="msg bot">Gespräch zurückgesetzt, Boss. Was steht an?</div>'};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+document.querySelector("#mic").onclick=()=>{if(!SR){add("Dein Browser unterstützt hier keine Spracheingabe. Nutze Chrome oder tippe deine Nachricht.","bot");return}const rec=new SR();rec.lang="de-DE";rec.interimResults=false;rec.onstart=()=>state.textContent="HÖRE ZU …";rec.onresult=e=>{input.value=e.results[0][0].transcript;send()};rec.onerror=()=>state.textContent="MIKROFON PRÜFEN";rec.onend=()=>{if(state.textContent==="HÖRE ZU …")state.textContent="BEREIT"};rec.start()};
+</script></body></html>
